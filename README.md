@@ -1,6 +1,6 @@
 # OpenSDC-Bench Website
 
-[**Open the benchmark website**](https://opensdc-org.github.io/benchmark/) · [Benchmark code](https://github.com/BingluCS/openSDC-Bench) · [Dataset guide](https://github.com/BingluCS/openSDC-Bench/tree/main/datasets)
+[**Open the benchmark website**](https://opensdc-org.github.io/benchmark/) · [Benchmark code](https://github.com/opensdc-org/OpenSDC-Bench) · [Dataset guide](https://github.com/opensdc-org/OpenSDC-Bench/tree/main/datasets)
 
 OpenSDC-Bench is the Open Scientific Data Compression Benchmark Suite. It compares compressors on scientific datasets under a common, documented protocol. Use the website to see how compressed size, throughput, and reconstruction quality vary by dataset and error bound.
 
@@ -18,7 +18,7 @@ OpenSDC-Bench is the Open Scientific Data Compression Benchmark Suite. It compar
 
 **Website changes:** [Fork this repository](https://github.com/opensdc-org/benchmark/fork) and open a pull request for changes to the interface, navigation, or documentation.
 
-**Benchmark changes:** The [benchmark repository](https://github.com/BingluCS/openSDC-Bench) contains the [native test harness](https://github.com/BingluCS/openSDC-Bench/tree/main/native), the [LFCQuality analysis library](https://github.com/BingluCS/openSDC-Bench/tree/main/quality), dataset documentation, and published measurements. Follow its [contribution guide](https://github.com/BingluCS/openSDC-Bench/blob/main/CONTRIBUTING.md) to add a compressor, metric, dataset, or result.
+**Benchmark changes:** The [benchmark repository](https://github.com/opensdc-org/OpenSDC-Bench) contains the [native test harness](https://github.com/opensdc-org/OpenSDC-Bench/tree/main/native), the [LFCQuality analysis library](https://github.com/opensdc-org/OpenSDC-Bench/tree/main/quality), dataset documentation, and published measurements. Follow its [contribution guide](https://github.com/opensdc-org/OpenSDC-Bench/blob/main/CONTRIBUTING.md) to add a compressor, metric, dataset, or result.
 
 ## Build and preview
 
@@ -26,9 +26,9 @@ Use Git and Python 3.11. Clone both repositories side by side. This repository c
 
 ```bash
 git clone https://github.com/opensdc-org/benchmark.git
-git clone https://github.com/BingluCS/openSDC-Bench.git
+git clone https://github.com/opensdc-org/OpenSDC-Bench.git
 cd benchmark
-python3 scripts/assemble.py --benchmark ../openSDC-Bench --output _site
+python3 scripts/assemble.py --benchmark ../OpenSDC-Bench --output _site
 python3 -m http.server 8000 --directory _site --bind 127.0.0.1
 ```
 
