@@ -50,7 +50,7 @@
     <section id="leaderboard" class="section" aria-labelledby="leaderboard-title">
       <div class="section-head">
         <div><p class="eyebrow">01 / Rankings</p><h2 id="leaderboard-title">The leaderboard</h2></div>
-        <p>Choose one dataset, error bound, and metric. Rankings compare results from the same audited protocol.</p>
+        <p>Choose a dataset and error bound, then select a column header to sort.</p>
       </div>
       <div class="leaderboard">
         <div class="track-bar" role="group" aria-label="Compressor track">
@@ -68,14 +68,43 @@
         <div class="leaderboard-controls">
           <label>Dataset <select id="rank-dataset"><option value="NYX">NYX</option></select></label>
           <label>Error bound <select id="rank-bound"><option value="0.001">1E-3</option></select></label>
-          <label>Rank by <select id="rank-metric"><option value="ratio">Compression ratio</option></select></label>
         </div>
-        <div class="rank-context"><div><p id="rank-context" role="status">Loading audited cohorts…</p><p id="rank-direction" class="rank-direction"></p></div><div class="context-actions"><a id="rank-permalink" href="#leaderboard">Link to this ranking ↗</a><a id="rank-explore-link" href="#results">Explore figures ↗</a><a href="./data/leaderboard.json?v=20261110-hardware-v1">Cohort data ↗</a></div></div>
+        <div class="rank-context"><div><p id="rank-context" role="status">Loading audited cohorts…</p><p id="rank-direction" class="rank-direction" role="status"></p></div><div class="context-actions"><a id="rank-permalink" href="#leaderboard">Link to this ranking ↗</a><a id="rank-explore-link" href="#results">Explore figures ↗</a><a href="./data/leaderboard.json?v=20261110-hardware-v1">Cohort data ↗</a></div></div>
         <p id="rank-scroll-hint" class="scroll-hint">Scroll horizontally to see all metrics <span aria-hidden="true">→</span></p>
         <div id="rank-scroll" class="table-scroll rank-scroll" tabindex="0" role="region" aria-label="Compressor leaderboard">
-          <table aria-describedby="rank-context">
-            <thead><tr><th scope="col">Rank</th><th scope="col">Compressor</th><th scope="col" id="rank-score-heading">Selected metric</th><th scope="col" id="rank-col-ratio">Ratio</th><th scope="col" id="rank-col-compress_MiB_s">Compression<br>throughput (MiB/s)</th><th scope="col" id="rank-col-decompress_MiB_s">Decompression<br>throughput (MiB/s)</th><th scope="col" id="rank-col-psnr_db">PSNR dB</th><th scope="col" id="rank-col-ssim">SSIM</th><th scope="col" id="rank-col-spectral_l1">Spectral L1</th></tr></thead>
-            <tbody id="rank-body"><tr><td colspan="9">Loading leaderboard…</td></tr></tbody>
+          <table aria-describedby="rank-context rank-direction">
+            <thead><tr>
+              <th scope="col">Rank</th>
+              <th scope="col">Compressor</th>
+              <th scope="col" aria-sort="descending">
+                <button type="button" class="rank-sort" data-rank-metric="ratio" disabled><span>Compression<br>ratio (×)</span><span class="rank-sort-icon" aria-hidden="true"></span></button>
+              </th>
+              <th scope="col">
+                <button type="button" class="rank-sort" data-rank-metric="compress_MiB_s" disabled><span>Compression<br>throughput (MiB/s)</span><span class="rank-sort-icon" aria-hidden="true"></span></button>
+              </th>
+              <th scope="col">
+                <button type="button" class="rank-sort" data-rank-metric="decompress_MiB_s" disabled><span>Decompression<br>throughput (MiB/s)</span><span class="rank-sort-icon" aria-hidden="true"></span></button>
+              </th>
+              <th scope="col">
+                <button type="button" class="rank-sort" data-rank-metric="psnr_db" disabled><span>PSNR (dB)</span><span class="rank-sort-icon" aria-hidden="true"></span></button>
+              </th>
+              <th scope="col">
+                <button type="button" class="rank-sort" data-rank-metric="ssim" disabled><span>SSIM</span><span class="rank-sort-icon" aria-hidden="true"></span></button>
+              </th>
+              <th scope="col">
+                <button type="button" class="rank-sort" data-rank-metric="spectral_l1" disabled><span>Spectral L1</span><span class="rank-sort-icon" aria-hidden="true"></span></button>
+              </th>
+              <th scope="col">
+                <button type="button" class="rank-sort" data-rank-metric="bits_per_value" disabled><span>Bits per value</span><span class="rank-sort-icon" aria-hidden="true"></span></button>
+              </th>
+              <th scope="col">
+                <button type="button" class="rank-sort" data-rank-metric="pcc" disabled><span>Pearson (PCC)</span><span class="rank-sort-icon" aria-hidden="true"></span></button>
+              </th>
+              <th scope="col">
+                <button type="button" class="rank-sort" data-rank-metric="field_acf_delta" title="Median field autocorrelation difference" disabled><span>Field ACF<br>difference</span><span class="rank-sort-icon" aria-hidden="true"></span></button>
+              </th>
+            </tr></thead>
+            <tbody id="rank-body"><tr><td colspan="11">Loading leaderboard…</td></tr></tbody>
           </table>
         </div>
         <p id="rank-empty" class="rank-empty" hidden></p>

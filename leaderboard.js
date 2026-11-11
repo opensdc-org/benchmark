@@ -2,7 +2,9 @@
 
 (() => {
   const get = id => document.getElementById(id);
-  const dataset = get("rank-dataset"), bound = get("rank-bound"), metric = get("rank-metric");
+  const dataset = get("rank-dataset"), bound = get("rank-bound");
+  const metricColumns = new Map(Array.from(document.querySelectorAll("button[data-rank-metric]"),
+    button => [button.dataset.rankMetric, button]));
   const buttons = {
     general: get("track-general"),
     domain_specific: get("track-domain_specific"),
@@ -13,8 +15,10 @@
   let data = null, track = Object.hasOwn(buttons, requestedTrack) ? requestedTrack : "general";
   const legacyMetrics = {compress_MB_s:"compress_MiB_s", decompress_MB_s:"decompress_MiB_s"};
   const requestedMetric = query.get("rank_metric");
-  let initial = {dataset:query.get("rank_dataset"), bound:query.get("rank_bound"),
-    metric:legacyMetrics[requestedMetric] || requestedMetric};
+  const requestedOrder = query.get("rank_order");
+  let sortMetric = Object.hasOwn(legacyMetrics, requestedMetric) ? legacyMetrics[requestedMetric] : requestedMetric || "ratio";
+  let sortOrder = ["asc", "desc"].includes(requestedOrder) ? requestedOrder : null;
+  let initial = {dataset:query.get("rank_dataset"), bound:query.get("rank_bound")};
 
   function options(select, values, preferred) {
     const previous = select.value;
@@ -38,7 +42,9 @@
     url.searchParams.set("rank_track", track);
     url.searchParams.set("rank_dataset", dataset.value);
     url.searchParams.set("rank_bound", bound.value);
-    url.searchParams.set("rank_metric", metric.value);
+    url.searchParams.set("rank_metric", sortMetric);
+    if (sortOrder) url.searchParams.set("rank_order", sortOrder);
+    else url.searchParams.delete("rank_order");
     url.hash = "leaderboard";
     get("rank-permalink").href = url.toString();
     url.searchParams.set("view_dataset", dataset.value);
@@ -56,7 +62,7 @@
     get("rank-scroll").hidden = true;
     get("rank-scroll-hint").hidden = true;
     get("rank-explore-link").hidden = true;
-    for (const select of [dataset,bound,metric]) select.disabled = true;
+    for (const select of [dataset,bound]) select.disabled = true;
     updateLinks();
   }
   function render() {
@@ -78,7 +84,7 @@
     get("rank-scroll").hidden = false;
     get("rank-scroll-hint").hidden = false;
     get("rank-explore-link").hidden = false;
-    for (const select of [dataset,bound,metric]) select.disabled = false;
+    for (const select of [dataset,bound]) select.disabled = false;
     const names = data.datasets.filter(name => groups.some(group => group.protocol.dataset === name));
     options(dataset,names.map(name => [name,name]),names.includes("NYX") ? "NYX" : names[0]);
     if (initial && names.includes(initial.dataset)) dataset.value = initial.dataset;
@@ -88,31 +94,39 @@
     if (initial && bounds.some(value => String(value) === initial.bound)) bound.value = initial.bound;
     const group = groups.find(g => g.protocol.dataset === dataset.value && g.protocol.alpha === Number(bound.value));
     if (!group) { showEmpty("No verified results match this selection."); return; }
-    const available = Object.entries(data.metrics).filter(([key]) =>
-      group.entries.some(entry => entry.status === "verified" && Number.isFinite(entry.metrics[key])));
-    options(metric,available.map(([key, spec]) => [key,spec.label]),available.some(([key]) => key === "ratio") ? "ratio" : available[0]?.[0]);
-    if (initial && available.some(([key]) => key === initial.metric)) metric.value = initial.metric;
     initial = null;
-    const selected = data.metrics[metric.value];
-    if (!selected || !["higher","lower"].includes(selected.direction)) {
+    const isVerified = entry => entry.cohort === group.id && entry.status === "verified";
+    const available = new Set([...metricColumns.keys()].filter(key =>
+      ["higher","lower"].includes(data.metrics[key]?.direction) &&
+      group.entries.some(entry => isVerified(entry) && Number.isFinite(entry.metrics[key]))));
+    if (!available.size) {
       showEmpty("No rankable metric is available for this cohort."); return;
+    }
+    if (!available.has(sortMetric)) {
+      sortMetric = available.has("ratio") ? "ratio" : available.values().next().value;
+      sortOrder = null;
+    }
+    const selected = data.metrics[sortMetric];
+    sortOrder ??= selected.direction === "higher" ? "desc" : "asc";
+    for (const [key, button] of metricColumns) {
+      button.disabled = !available.has(key);
+      if (key === sortMetric) {
+        button.parentElement.setAttribute("aria-sort", sortOrder === "desc" ? "descending" : "ascending");
+      } else button.parentElement.removeAttribute("aria-sort");
     }
     const valid = [], unranked = [];
     for (const entry of group.entries) {
-      const value = entry.metrics[metric.value];
-      if (entry.cohort === group.id && entry.status === "verified" && Number.isFinite(value)) valid.push(entry);
+      if (isVerified(entry) && Number.isFinite(entry.metrics[sortMetric])) valid.push(entry);
       else unranked.push(entry);
     }
-    const sign = selected.direction === "higher" ? -1 : 1;
-    valid.sort((a,b) => sign * (a.metrics[metric.value] - b.metrics[metric.value]) || a.codec.localeCompare(b.codec));
-    const columns = ["ratio","compress_MiB_s","decompress_MiB_s","psnr_db","ssim","spectral_l1"];
-    for (const key of columns) get("rank-col-" + key).hidden = key === metric.value;
+    const sign = sortOrder === "desc" ? -1 : 1;
+    valid.sort((a,b) => sign * (a.metrics[sortMetric] - b.metrics[sortMetric]) || a.codec.localeCompare(b.codec));
     const fragment = document.createDocumentFragment();
     let previous, rank = 0;
     [...valid,...unranked].forEach((entry,index) => {
       const row = document.createElement("tr");
       if (index < valid.length) {
-        const value = entry.metrics[metric.value];
+        const value = entry.metrics[sortMetric];
         if (previous === undefined || value !== previous) rank = index + 1;
         previous = value;
         if (rank <= 3) row.className = "rank-place-" + rank;
@@ -124,21 +138,25 @@
         link.textContent = entry.display_name || entry.codec; title.replaceChildren(link);
       }
       const m = entry.metrics;
-      cell(row,number(m[metric.value],metric.value),"rank-score");
-      for (const key of columns) if (key !== metric.value) cell(row,number(m[key],key));
+      for (const key of metricColumns.keys()) cell(row,number(m[key],key),key === sortMetric ? "rank-score" : "");
       fragment.append(row);
     });
     get("rank-body").replaceChildren(fragment);
-    const heading = selected.label + (selected.unit ? " (" + selected.unit + ")" : "");
-    get("rank-score-heading").textContent = /^(de)?compress_MiB_s$/.test(metric.value)
-      ? heading.replace(" throughput", "\nthroughput") : heading;
-    get("rank-direction").textContent = selected.direction === "higher" ? "Higher values rank first" : "Lower values rank first";
+    get("rank-direction").textContent = selected.label + (sortOrder === "desc" ? " · highest first" : " · lowest first");
     get("rank-context").textContent = group.protocol.dataset + " · " + nameOfBound(group.protocol.alpha) +
       " range-relative · " + group.protocol.threads + " CPU thread · " + group.field_count + " fields";
     updateLinks();
   }
   for (const [name,button] of Object.entries(buttons)) button.addEventListener("click",() => {track=name;render();});
-  for (const control of [dataset,bound,metric]) control.addEventListener("change",render);
+  for (const control of [dataset,bound]) control.addEventListener("change",render);
+  for (const [key, button] of metricColumns) {
+    button.addEventListener("click", () => {
+      if (key === sortMetric) sortOrder = sortOrder === "asc" ? "desc" : "asc";
+      else sortOrder = null;
+      sortMetric = key;
+      render();
+    });
+  }
   fetch("./data/leaderboard.json?v=20261110-hardware-v1",{cache:"no-cache"})
     .then(response => {if (!response.ok) throw new Error("leaderboard unavailable"); return response.json();})
     .then(value => {if (value.schema_version !== 1) throw new Error("unsupported leaderboard schema"); data=value; render();})
